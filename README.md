@@ -9,6 +9,10 @@ no API key needed.
 
 ## Features
 
+- Compare two profiles side by side (repos, followers, stars, join year) with the leader highlighted
+- Shareable links: the URL keeps the user and the compared user (`?u=...&vs=...`) plus a copy-link button
+- Filter repos by language, copy a repo's clone URL
+
 - Look up any public GitHub user by username
 - Profile card: avatar, name, bio, location, company, website and join date
 - Stats: public repos, followers, following and gists

@@ -11,12 +11,16 @@ const SORTS = [
 export default function RepoList({ repos }) {
   const [sort, setSort] = useState('pushed')
   const [filter, setFilter] = useState('')
+  const [lang, setLang] = useState('')
+  const [copied, setCopied] = useState(0)
+  const langs = useMemo(() => [...new Set(repos.map((r) => r.language).filter(Boolean))].sort(), [repos])
 
   const visible = useMemo(() => {
     const q = filter.trim().toLowerCase()
+    const base = lang ? repos.filter((r) => r.language === lang) : repos
     const filtered = q
-      ? repos.filter((r) => r.name.toLowerCase().includes(q) || (r.description || '').toLowerCase().includes(q))
-      : [...repos]
+      ? base.filter((r) => r.name.toLowerCase().includes(q) || (r.description || '').toLowerCase().includes(q))
+      : [...base]
     const by = {
       pushed: (a, b) => new Date(b.pushed_at) - new Date(a.pushed_at),
       stars: (a, b) => b.stargazers_count - a.stargazers_count,
@@ -24,7 +28,7 @@ export default function RepoList({ repos }) {
       name: (a, b) => a.name.localeCompare(b.name),
     }
     return filtered.sort(by[sort])
-  }, [repos, sort, filter])
+  }, [repos, sort, filter, lang])
 
   return (
     <section className="panel">
@@ -38,6 +42,10 @@ export default function RepoList({ repos }) {
             onChange={(e) => setFilter(e.target.value)}
             aria-label="Filter repositories"
           />
+          <select className="repo-sort" value={lang} onChange={(e) => setLang(e.target.value)} aria-label="Filter by language">
+            <option value="">All languages</option>
+            {langs.map((l) => <option key={l} value={l}>{l}</option>)}
+          </select>
           <select className="repo-sort" value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sort repositories">
             {SORTS.map(([value, label]) => (
               <option key={value} value={value}>{label}</option>
@@ -65,6 +73,9 @@ export default function RepoList({ repos }) {
               )}
               <span>★ {r.stargazers_count}</span>
               <span>⑂ {r.forks_count}</span>
+              <button className="chip" onClick={() => { navigator.clipboard?.writeText(r.clone_url); setCopied(r.id); setTimeout(() => setCopied(0), 1500) }}>
+                {copied === r.id ? 'Copied' : 'Copy clone URL'}
+              </button>
               <span>Updated {new Date(r.pushed_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
             </p>
           </li>

@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { friendlyError, getRepos, getUser } from './api'
 import ProfileCard from './components/ProfileCard'
+import Compare from './components/Compare'
 import RepoList from './components/RepoList'
 import Spinner from './components/Spinner'
 import ErrorBox from './components/ErrorBox'
 
 const HISTORY_KEY = 'github-explorer-history'
 const DEFAULT_USER = 'malakmo7amed309'
+const initialUser = () => new URLSearchParams(window.location.search).get('u') || DEFAULT_USER
+const initialCompare = () => new URLSearchParams(window.location.search).get('vs') || ''
 
 function loadHistory() {
   try {
@@ -18,12 +21,15 @@ function loadHistory() {
 
 export default function App() {
   const [input, setInput] = useState('')
-  const [username, setUsername] = useState(DEFAULT_USER)
+  const [username, setUsername] = useState(initialUser)
   const [history, setHistory] = useState(loadHistory)
   const [user, setUser] = useState(null)
   const [repos, setRepos] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [vs, setVs] = useState(initialCompare)
+  const [vsInput, setVsInput] = useState('')
+  const [copied, setCopied] = useState(false)
   const requestId = useRef(0)
 
   const load = useCallback(async (name) => {
@@ -46,6 +52,20 @@ export default function App() {
   }, [])
 
   useEffect(() => {
+    const p = new URLSearchParams()
+    p.set('u', username)
+    if (vs) p.set('vs', vs)
+    window.history.replaceState(null, '', `?${p.toString()}`)
+  }, [username, vs])
+
+  function copyLink() {
+    navigator.clipboard?.writeText(window.location.href).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    })
+  }
+
+  useEffect(() => {
     load(username)
   }, [username, load])
 
@@ -66,7 +86,7 @@ export default function App() {
     <div className="app">
       <header className="topbar container">
         <h1 className="brand">
-          <span aria-hidden="true"><span aria-hidden="true">🐙</span> DevFinderlt;/<span aria-hidden="true">🐙</span> DevFindergt;</span> DevFinder
+          <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg> DevFinder
         </h1>
         <p className="tagline">Explore any GitHub profile</p>
       </header>
@@ -100,6 +120,15 @@ export default function App() {
 
         {user && !loading && !error && (
           <>
+            <div className="share-row">
+              <button className="chip" onClick={copyLink}>{copied ? 'Link copied' : 'Copy share link'}</button>
+              <form className="vs-form" onSubmit={(e) => { e.preventDefault(); if (vsInput.trim()) { setVs(vsInput.trim()); setVsInput('') } }}>
+                <input className="repo-filter" placeholder="Compare with…" value={vsInput} onChange={(e) => setVsInput(e.target.value)} aria-label="Compare with username" />
+                <button className="chip" type="submit">Compare</button>
+                {vs && <button className="chip" type="button" onClick={() => setVs('')}>Clear</button>}
+              </form>
+            </div>
+            {vs && <Compare a={user} aRepos={repos} b={vs} />}
             <ProfileCard user={user} repos={repos} />
             <RepoList repos={repos} />
           </>
